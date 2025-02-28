@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Assistant</title>
+    <title>My Finance App</title>
     <!-- Подключаем Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
@@ -62,28 +62,82 @@
             color: white;
             font-size: 16px;
         }
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: #00A8FF;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        .tab.active {
+            background: #0088CC;
+        }
+        .content {
+            display: none;
+        }
+        .content.active {
+            display: block;
+        }
+        .history {
+            text-align: left;
+            margin-top: 20px;
+        }
+        .history-item {
+            background: #2A2A2A;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .edit-btn, .delete-btn {
+            background: none;
+            border: none;
+            color: #FF5252;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .edit-btn {
+            color: #FFC107;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Ваш AI Финансовый Ассистент</h1>
-        <input type="number" id="income" placeholder="Добавить доход" />
-        <button class="btn" onclick="addIncome()">Добавить</button>
-        <input type="number" id="expense" placeholder="Добавить расход" />
-        <input type="text" id="category" placeholder="Категория" />
-        <button class="btn" onclick="addExpense()">Добавить</button>
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('main')">Главная</div>
+            <div class="tab" onclick="showTab('history')">История</div>
+        </div>
+        <div id="main" class="content active">
+            <h1>Ваш AI Финансовый Ассистент</h1>
+            <input type="number" id="income" placeholder="Добавить доход" />
+            <button class="btn" onclick="addIncome()">Добавить</button>
+            <input type="number" id="expense" placeholder="Добавить расход" />
+            <input type="text" id="category" placeholder="Категория" />
+            <button class="btn" onclick="addExpense()">Добавить</button>
+        </div>
+        <div id="history" class="content">
+            <h1>История операций</h1>
+            <div class="history" id="history-list"></div>
+        </div>
     </div>
 
     <script>
         // Конфигурация Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyANHM115TxFfva5d-oMDKAtPmBF_59OgTA",
-            authDomain: "financeai-e9f18.firebaseapp.com",
-            projectId: "financeai-e9f18",
-            storageBucket: "financeai-e9f18.firebasestorage.app",
-            messagingSenderId: "71690881541",
-            appId: "1:71690881541:web:c68e6ecf51082dfbedaa6c",
-            measurementId: "G-S9T1BR9SEL"
+          apiKey: "AIzaSyANHM115TxFfva5d-oMDKAtPmBF_59OgTA",
+          authDomain: "financeai-e9f18.firebaseapp.com",
+          databaseURL: "https://financeai-e9f18-default-rtdb.firebaseio.com",
+          projectId: "financeai-e9f18",
+          storageBucket: "financeai-e9f18.firebasestorage.app",
+          messagingSenderId: "71690881541",
+          appId: "1:71690881541:web:c68e6ecf51082dfbedaa6c",
+          measurementId: "G-S9T1BR9SEL"
         };
 
         // Инициализация Firebase
@@ -99,8 +153,7 @@
                     type: 'income',
                     amount: income
                 }).then(() => {
-                    alert("Доход добавлен!");
-                    document.getElementById("income").value = ""; // Очистка поля
+                    clearInputs();
                 }).catch(err => console.error('Error adding income:', err));
             } else {
                 alert("Пожалуйста, введите корректную сумму.");
@@ -118,14 +171,76 @@
                     amount: expense,
                     category: category
                 }).then(() => {
-                    alert("Расход добавлен!");
-                    document.getElementById("expense").value = "";
-                    document.getElementById("category").value = "";
+                    clearInputs();
                 }).catch(err => console.error('Error adding expense:', err));
             } else {
                 alert("Пожалуйста, введите корректную сумму и категорию.");
             }
         }
+
+        // Функция для очистки полей ввода
+        function clearInputs() {
+            document.getElementById("income").value = "";
+            document.getElementById("expense").value = "";
+            document.getElementById("category").value = "";
+        }
+
+        // Функция для обновления истории операций
+        function updateHistory() {
+            const historyList = document.getElementById("history-list");
+            historyList.innerHTML = "";
+
+            const financesRef = database.ref('finances');
+            financesRef.once('value', snapshot => {
+                const data = snapshot.val();
+                if (data) {
+                    Object.entries(data).forEach(([key, entry]) => {
+                        let item = document.createElement("div");
+                        item.className = "history-item";
+                        item.innerHTML = ` 
+                            ${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
+                            <button class="edit-btn" onclick="editEntry('${key}')">✏️</button>
+                            <button class="delete-btn" onclick="deleteEntry('${key}')">❌</button>
+                        `;
+                        historyList.appendChild(item);
+                    });
+                }
+            }).catch(err => console.error('Error fetching history:', err));
+        }
+
+        // Функция для редактирования записи
+        function editEntry(key) {
+            let newAmount = prompt("Введите новую сумму:");
+            if (newAmount && !isNaN(newAmount)) {
+                const updateRef = database.ref(`finances/${key}`);
+                updateRef.update({
+                    amount: newAmount
+                }).then(() => {
+                    updateHistory();
+                }).catch(err => console.error('Error updating entry:', err));
+            } else {
+                alert("Пожалуйста, введите корректную сумму.");
+            }
+        }
+
+        // Функция для удаления записи
+        function deleteEntry(key) {
+            const deleteRef = database.ref(`finances/${key}`);
+            deleteRef.remove().then(() => {
+                updateHistory();
+            }).catch(err => console.error('Error deleting entry:', err));
+        }
+
+        // Функция для переключения вкладок
+        function showTab(tabName) {
+            document.querySelectorAll(".content").forEach(tab => tab.classList.remove("active"));
+            document.getElementById(tabName).classList.add("active");
+            document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
+            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add("active");
+        }
+
+        // Загружаем историю при загрузке страницы
+        window.onload = updateHistory;
     </script>
 </body>
 </html>
