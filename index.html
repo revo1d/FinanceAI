@@ -146,14 +146,16 @@
         // Функция для добавления дохода
         function addIncome() {
             let income = document.getElementById("income").value;
-            if (income) {
+            if (income && !isNaN(income)) {
                 const newIncomeRef = database.ref('finances').push();
                 newIncomeRef.set({
                     type: 'income',
                     amount: income
                 }).then(() => {
-                    updateHistory();
+                    clearInputs();
                 }).catch(err => console.error('Error adding income:', err));
+            } else {
+                alert("Пожалуйста, введите корректную сумму.");
             }
         }
 
@@ -161,16 +163,25 @@
         function addExpense() {
             let expense = document.getElementById("expense").value;
             let category = document.getElementById("category").value;
-            if (expense && category) {
+            if (expense && category && !isNaN(expense)) {
                 const newExpenseRef = database.ref('finances').push();
                 newExpenseRef.set({
                     type: 'expense',
                     amount: expense,
                     category: category
                 }).then(() => {
-                    updateHistory();
+                    clearInputs();
                 }).catch(err => console.error('Error adding expense:', err));
+            } else {
+                alert("Пожалуйста, введите корректную сумму и категорию.");
             }
+        }
+
+        // Функция для очистки полей ввода
+        function clearInputs() {
+            document.getElementById("income").value = "";
+            document.getElementById("expense").value = "";
+            document.getElementById("category").value = "";
         }
 
         // Функция для обновления истории операций
@@ -179,42 +190,41 @@
             historyList.innerHTML = "";
 
             const financesRef = database.ref('finances');
-            financesRef.on('value', snapshot => {
+            financesRef.once('value', snapshot => {
                 const data = snapshot.val();
                 if (data) {
-                    const historyList = document.getElementById("history-list");
-                    historyList.innerHTML = "";
-                    Object.values(data).forEach((entry, index) => {
+                    Object.entries(data).forEach(([key, entry]) => {
                         let item = document.createElement("div");
                         item.className = "history-item";
                         item.innerHTML = `
                             ${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
-                            <button class="edit-btn" onclick="editEntry('${index}')">✏️</button>
-                            <button class="delete-btn" onclick="deleteEntry('${index}')">❌</button>
+                            <button class="edit-btn" onclick="editEntry('${key}')">✏️</button>
+                            <button class="delete-btn" onclick="deleteEntry('${key}')">❌</button>
                         `;
                         historyList.appendChild(item);
                     });
                 }
             }).catch(err => console.error('Error fetching history:', err));
-
         }
 
         // Функция для редактирования записи
-        function editEntry(index) {
+        function editEntry(key) {
             let newAmount = prompt("Введите новую сумму:");
-            if (newAmount !== null) {
-                const updateRef = database.ref(`finances/${index}`);
+            if (newAmount && !isNaN(newAmount)) {
+                const updateRef = database.ref(`finances/${key}`);
                 updateRef.update({
                     amount: newAmount
                 }).then(() => {
                     updateHistory();
                 }).catch(err => console.error('Error updating entry:', err));
+            } else {
+                alert("Пожалуйста, введите корректную сумму.");
             }
         }
 
         // Функция для удаления записи
-        function deleteEntry(index) {
-            const deleteRef = database.ref(`finances/${index}`);
+        function deleteEntry(key) {
+            const deleteRef = database.ref(`finances/${key}`);
             deleteRef.remove().then(() => {
                 updateHistory();
             }).catch(err => console.error('Error deleting entry:', err));
