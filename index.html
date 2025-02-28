@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Assistant</title>
+    <!-- Подключаем Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
     <style>
@@ -129,13 +130,13 @@
     <script>
         // Конфигурация Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyANHM115TxFfva5d-oMDKAtPmBF_59OgTA",
-            authDomain: "financeai-e9f18.firebaseapp.com",
-            projectId: "financeai-e9f18",
-            storageBucket: "financeai-e9f18.firebasestorage.app",
-            messagingSenderId: "71690881541",
-            appId: "1:71690881541:web:c68e6ecf51082dfbedaa6c",
-            measurementId: "G-S9T1BR9SEL"
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
 
         // Инициализация Firebase
@@ -177,7 +178,6 @@
             const historyList = document.getElementById("history-list");
             historyList.innerHTML = "";
 
-            // Получаем данные из Firebase
             const financesRef = database.ref('finances');
             financesRef.once('value', snapshot => {
                 const data = snapshot.val();
@@ -187,7 +187,7 @@
                         item.className = "history-item";
                         item.innerHTML = `
                             ${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
-                            <button class="edit-btn" onclick="editEntry('${index}', '${entry.type}')">✏️</button>
+                            <button class="edit-btn" onclick="editEntry('${index}')">✏️</button>
                             <button class="delete-btn" onclick="deleteEntry('${index}')">❌</button>
                         `;
                         historyList.appendChild(item);
@@ -197,7 +197,7 @@
         }
 
         // Функция для редактирования записи
-        function editEntry(index, type) {
+        function editEntry(index) {
             let newAmount = prompt("Введите новую сумму:");
             if (newAmount !== null) {
                 const updateRef = database.ref(`finances/${index}`);
@@ -225,6 +225,7 @@
             document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add("active");
         }
 
+        // Загружаем историю при загрузке страницы
         window.onload = updateHistory;
     </script>
 </body>
