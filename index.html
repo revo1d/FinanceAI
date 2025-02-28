@@ -4,128 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Assistant</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
-        }
-        body {
-            background-color: #121212;
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            text-align: center;
-        }
-        .container {
-            width: 90%;
-            max-width: 400px;
-            padding: 20px;
-            background: #1E1E1E;
-            border-radius: 20px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-        h1 {
-            font-size: 22px;
-            margin-bottom: 15px;
-        }
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            background: #00A8FF;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .btn:hover {
-            background: #0088CC;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 10px;
-            background: #2A2A2A;
-            color: white;
-            font-size: 16px;
-        }
-        .tabs {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
-        }
-        .tab {
-            padding: 10px 20px;
-            background: #00A8FF;
-            border-radius: 12px;
-            cursor: pointer;
-        }
-        .tab.active {
-            background: #0088CC;
-        }
-        .content {
-            display: none;
-        }
-        .content.active {
-            display: block;
-        }
-        .history {
-            text-align: left;
-            margin-top: 20px;
-        }
-        .history-item {
-            background: #2A2A2A;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .edit-btn, .delete-btn {
-            background: none;
-            border: none;
-            color: #FF5252;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .edit-btn {
-            color: #FFC107;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Arial', sans-serif; }
+        body { background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .container { width: 90%; max-width: 400px; padding: 20px; background: #1E1E1E; border-radius: 20px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); }
+        h1 { font-size: 22px; margin-bottom: 15px; }
+        .btn { display: block; width: 100%; padding: 12px; margin-top: 10px; background: #00A8FF; color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        .btn:hover { background: #0088CC; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: none; border-radius: 10px; background: #2A2A2A; color: white; font-size: 16px; }
+        .history { text-align: left; margin-top: 20px; }
+        .history-item { background: #2A2A2A; padding: 10px; margin: 5px 0; border-radius: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="tabs">
-            <div class="tab active" onclick="showTab('main')">Главная</div>
-            <div class="tab" onclick="showTab('history')">История</div>
-        </div>
-        <div id="main" class="content active">
-            <h1>Ваш AI Финансовый Ассистент</h1>
-            <input type="number" id="income" placeholder="Добавить доход" />
-            <button class="btn" onclick="addIncome()">Добавить</button>
-            <input type="number" id="expense" placeholder="Добавить расход" />
-            <input type="text" id="category" placeholder="Категория" />
-            <button class="btn" onclick="addExpense()">Добавить</button>
-        </div>
-        <div id="history" class="content">
-            <h1>История операций</h1>
-            <div class="history" id="history-list"></div>
-        </div>
+        <h1>Ваш AI Финансовый Ассистент</h1>
+        <input type="number" id="income" placeholder="Добавить доход" />
+        <button class="btn" onclick="addIncome()">Добавить</button>
+        <input type="number" id="expense" placeholder="Добавить расход" />
+        <input type="text" id="category" placeholder="Категория" />
+        <button class="btn" onclick="addExpense()">Добавить</button>
+        <div class="history" id="history-list"></div>
     </div>
     <script>
-        let financeData = JSON.parse(localStorage.getItem("financeData")) || [];
+        const firebaseConfig = {
+            apiKey: "AIzaSyANHM115TxFfva5d-oMDKAtPmBF_59OgTA",
+            authDomain: "financeai-e9f18.firebaseapp.com",
+            databaseURL: "https://financeai-e9f18-default-rtdb.firebaseio.com",
+            projectId: "financeai-e9f18",
+            storageBucket: "financeai-e9f18.firebasestorage.app",
+            messagingSenderId: "71690881541",
+            appId: "1:71690881541:web:c68e6ecf51082dfbedaa6c",
+            measurementId: "G-S9T1BR9SEL"
+        };
+        
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const userId = Telegram.WebApp.initDataUnsafe.user.id;
+
+        let financeData = [];
 
         function addIncome() {
             let income = document.getElementById("income").value;
@@ -146,48 +66,23 @@
             }
         }
 
-        function updateHistory() {
-            let historyList = document.getElementById("history-list");
-            historyList.innerHTML = "";
-            financeData.forEach((entry, index) => {
-                let item = document.createElement("div");
-                item.className = "history-item";
-                item.innerHTML = `
-                    ${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
-                    <button class="edit-btn" onclick="editEntry(${index})">✏️</button>
-                    <button class="delete-btn" onclick="deleteEntry(${index})">❌</button>
-                `;
-                historyList.appendChild(item);
+        function saveData() {
+            financeData.forEach(entry => {
+                const newEntryRef = database.ref(`users/${userId}/history`).push();
+                newEntryRef.set(entry);
             });
         }
 
-        function editEntry(index) {
-            let newAmount = prompt("Введите новую сумму:", financeData[index].amount);
-            if (newAmount !== null) {
-                financeData[index].amount = newAmount;
-                saveData();
-                updateHistory();
-            }
+        function updateHistory() {
+            let historyList = document.getElementById("history-list");
+            historyList.innerHTML = "";
+            financeData.forEach(entry => {
+                let item = document.createElement("div");
+                item.className = "history-item";
+                item.innerHTML = `${entry.type === 'income' ? "Доход: " : "Расход: "} ${entry.amount} ${entry.category ? " на " + entry.category : ""}`;
+                historyList.appendChild(item);
+            });
         }
-
-        function deleteEntry(index) {
-            financeData.splice(index, 1);
-            saveData();
-            updateHistory();
-        }
-
-        function saveData() {
-            localStorage.setItem("financeData", JSON.stringify(financeData));
-        }
-
-        function showTab(tabName) {
-            document.querySelectorAll(".content").forEach(tab => tab.classList.remove("active"));
-            document.getElementById(tabName).classList.add("active");
-            document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
-            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add("active");
-        }
-
-        window.onload = updateHistory;
     </script>
 </body>
 </html>
