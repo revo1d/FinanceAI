@@ -152,11 +152,11 @@
             financeData.forEach((entry, index) => {
                 let item = document.createElement("div");
                 item.className = "history-item";
-                item.innerHTML = 
+                item.innerHTML = `
                     ${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
                     <button class="edit-btn" onclick="editEntry(${index})">✏️</button>
                     <button class="delete-btn" onclick="deleteEntry(${index})">❌</button>
-                ;
+                `;
                 historyList.appendChild(item);
             });
         }
@@ -184,7 +184,7 @@
             document.querySelectorAll(".content").forEach(tab => tab.classList.remove("active"));
             document.getElementById(tabName).classList.add("active");
             document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
-            document.querySelector([onclick="showTab('${tabName}')"]).classList.add("active");
+            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add("active");
         }
 
         window.onload = updateHistory;
