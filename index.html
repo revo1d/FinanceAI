@@ -179,9 +179,11 @@
             historyList.innerHTML = "";
 
             const financesRef = database.ref('finances');
-            financesRef.once('value', snapshot => {
+            financesRef.on('value', snapshot => {
                 const data = snapshot.val();
                 if (data) {
+                    const historyList = document.getElementById("history-list");
+                    historyList.innerHTML = "";
                     Object.values(data).forEach((entry, index) => {
                         let item = document.createElement("div");
                         item.className = "history-item";
@@ -194,6 +196,7 @@
                     });
                 }
             }).catch(err => console.error('Error fetching history:', err));
+
         }
 
         // Функция для редактирования записи
