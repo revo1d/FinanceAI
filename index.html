@@ -4,50 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Assistant</title>
+    <!-- Подключаем Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-    <script async src="https://telegram.org/js/telegram-widget.js?7"
-        data-telegram-login="YOUR_BOT_USERNAME" data-size="large"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
     <style>
-        /* Стили для Web App */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
         body {
-            font-family: Arial, sans-serif;
             background-color: #121212;
             color: #ffffff;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             height: 100vh;
+            text-align: center;
         }
         .container {
-            background: #1E1E1E;
+            width: 90%;
+            max-width: 400px;
             padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            background: #1E1E1E;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            font-size: 22px;
+            margin-bottom: 15px;
         }
         .btn {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #00A8FF;
-            border-radius: 8px;
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background: #00A8FF;
             color: white;
-            cursor: pointer;
             border: none;
+            border-radius: 12px;
             font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
         }
         .btn:hover {
-            background-color: #0088CC;
+            background: #0088CC;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            background: #2A2A2A;
+            color: white;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Авторизация через Telegram</h2>
-        <p>Нажмите кнопку ниже для входа через Telegram:</p>
-        <div id="telegram-button"></div>
-
-        <div id="firebase-auth-status"></div>
+        <h1>Ваш AI Финансовый Ассистент</h1>
+        <input type="number" id="income" placeholder="Добавить доход" />
+        <button class="btn" onclick="addIncome()">Добавить</button>
+        <input type="number" id="expense" placeholder="Добавить расход" />
+        <input type="text" id="category" placeholder="Категория" />
+        <button class="btn" onclick="addExpense()">Добавить</button>
     </div>
 
     <script>
@@ -55,7 +79,6 @@
         const firebaseConfig = {
             apiKey: "AIzaSyANHM115TxFfva5d-oMDKAtPmBF_59OgTA",
             authDomain: "financeai-e9f18.firebaseapp.com",
-            databaseURL: "https://financeai-e9f18-default-rtdb.firebaseio.com",
             projectId: "financeai-e9f18",
             storageBucket: "financeai-e9f18.firebasestorage.app",
             messagingSenderId: "71690881541",
@@ -65,37 +88,43 @@
 
         // Инициализация Firebase
         const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+        const database = firebase.database();
 
-        // Функция для авторизации через Telegram
-        function authenticateWithFirebase(telegramId) {
-            fetch('https://yourserver.com/login?telegram_id=' + telegramId)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.firebase_token) {
-                        auth.signInWithCustomToken(data.firebase_token)
-                            .then(() => {
-                                document.getElementById('firebase-auth-status').innerHTML = "Вы авторизованы!";
-                            })
-                            .catch(error => {
-                                document.getElementById('firebase-auth-status').innerHTML = "Ошибка авторизации!";
-                                console.error(error);
-                            });
-                    } else {
-                        console.error('Не удалось авторизовать через Firebase');
-                    }
-                })
-                .catch(error => {
-                    console.error('Ошибка при авторизации через сервер:', error);
-                });
+        // Функция для добавления дохода
+        function addIncome() {
+            let income = document.getElementById("income").value;
+            if (income && !isNaN(income)) {
+                const newIncomeRef = database.ref('finances').push();
+                newIncomeRef.set({
+                    type: 'income',
+                    amount: income
+                }).then(() => {
+                    alert("Доход добавлен!");
+                    document.getElementById("income").value = ""; // Очистка поля
+                }).catch(err => console.error('Error adding income:', err));
+            } else {
+                alert("Пожалуйста, введите корректную сумму.");
+            }
         }
 
-        // Извлечение Telegram ID из URL (когда пользователь нажал кнопку в Telegram)
-        const urlParams = new URLSearchParams(window.location.search);
-        const telegramId = urlParams.get('telegram_id');
-
-        if (telegramId) {
-            authenticateWithFirebase(telegramId);
+        // Функция для добавления расхода
+        function addExpense() {
+            let expense = document.getElementById("expense").value;
+            let category = document.getElementById("category").value;
+            if (expense && category && !isNaN(expense)) {
+                const newExpenseRef = database.ref('finances').push();
+                newExpenseRef.set({
+                    type: 'expense',
+                    amount: expense,
+                    category: category
+                }).then(() => {
+                    alert("Расход добавлен!");
+                    document.getElementById("expense").value = "";
+                    document.getElementById("category").value = "";
+                }).catch(err => console.error('Error adding expense:', err));
+            } else {
+                alert("Пожалуйста, введите корректную сумму и категорию.");
+            }
         }
     </script>
 </body>
