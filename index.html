@@ -127,43 +127,49 @@
     </div>
     <script>
         let ipfs;
+        let financeData = [];
 
         async function initIPFS() {
             ipfs = await Ipfs.create();
         }
 
-        // Инициализация IPFS при загрузке страницы
-        window.onload = async function () {
-            await initIPFS();
-            loadData();
-        }
-
         async function loadData() {
-            const user = Telegram.WebApp.initDataUnsafe.user; // Получаем информацию о пользователе
+            const user = Telegram.WebApp.initDataUnsafe.user; 
+            if (!user) {
+                console.error("Ошибка: пользователь не найден");
+                return;
+            }
             const userId = user.id;
             const fileHash = localStorage.getItem(`financeData_${userId}`);
 
             if (fileHash) {
-                const file = await ipfs.cat(fileHash);
-                const data = JSON.parse(new TextDecoder().decode(file));
-                updateHistory(data);
+                try {
+                    const file = await ipfs.cat(fileHash);
+                    financeData = JSON.parse(new TextDecoder().decode(file));
+                    updateHistory();
+                } catch (error) {
+                    console.error("Ошибка загрузки данных с IPFS:", error);
+                }
             }
         }
 
-        async function saveData(financeData) {
-            const buffer = new TextEncoder().encode(JSON.stringify(financeData));
-            const { path } = await ipfs.add(buffer);
-            const user = Telegram.WebApp.initDataUnsafe.user;
-            localStorage.setItem(`financeData_${user.id}`, path);
+        async function saveData() {
+            try {
+                const buffer = new TextEncoder().encode(JSON.stringify(financeData));
+                const { path } = await ipfs.add(buffer);
+                const user = Telegram.WebApp.initDataUnsafe.user;
+                localStorage.setItem(`financeData_${user.id}`, path);
+            } catch (error) {
+                console.error("Ошибка сохранения данных в IPFS:", error);
+            }
         }
 
         async function addIncome() {
             let income = document.getElementById("income").value;
             if (income) {
-                let financeData = JSON.parse(localStorage.getItem("financeData")) || [];
                 financeData.push({ type: 'income', amount: income });
-                await saveData(financeData);
-                updateHistory(financeData);
+                await saveData();
+                updateHistory();
             }
         }
 
@@ -171,49 +177,52 @@
             let expense = document.getElementById("expense").value;
             let category = document.getElementById("category").value;
             if (expense && category) {
-                let financeData = JSON.parse(localStorage.getItem("financeData")) || [];
                 financeData.push({ type: 'expense', amount: expense, category: category });
-                await saveData(financeData);
-                updateHistory(financeData);
+                await saveData();
+                updateHistory();
             }
         }
 
-        function updateHistory(financeData) {
+        function updateHistory() {
             let historyList = document.getElementById("history-list");
             historyList.innerHTML = "";
             financeData.forEach((entry, index) => {
                 let item = document.createElement("div");
                 item.className = "history-item";
-                item.innerHTML = 
-                    `${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
+                item.innerHTML = `
+                    ${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
                     <button class="edit-btn" onclick="editEntry(${index})">✏️</button>
-                    <button class="delete-btn" onclick="deleteEntry(${index})">❌</button>`;
+                    <button class="delete-btn" onclick="deleteEntry(${index})">❌</button>
+                `;
                 historyList.appendChild(item);
             });
         }
 
         async function editEntry(index) {
-            let financeData = JSON.parse(localStorage.getItem("financeData"));
             let newAmount = prompt("Введите новую сумму:", financeData[index].amount);
             if (newAmount !== null) {
                 financeData[index].amount = newAmount;
-                await saveData(financeData);
-                updateHistory(financeData);
+                await saveData();
+                updateHistory();
             }
         }
 
         async function deleteEntry(index) {
-            let financeData = JSON.parse(localStorage.getItem("financeData"));
             financeData.splice(index, 1);
-            await saveData(financeData);
-            updateHistory(financeData);
+            await saveData();
+            updateHistory();
         }
 
         function showTab(tabName) {
             document.querySelectorAll(".content").forEach(tab => tab.classList.remove("active"));
             document.getElementById(tabName).classList.add("active");
             document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
-            document.querySelector([onclick="showTab('${tabName}')"]).classList.add("active");
+            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add("active");
+        }
+
+        window.onload = async function () {
+            await initIPFS();
+            await loadData();
         }
     </script>
 </body>
