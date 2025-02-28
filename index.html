@@ -111,7 +111,7 @@
             <div class="tab active" onclick="showTab('main')">Главная</div>
             <div class="tab" onclick="showTab('history')">История</div>
         </div>
-        <div id="main" class="content active">
+<div id="main" class="content active">
             <h1>Ваш AI Финансовый Ассистент</h1>
             <input type="number" id="income" placeholder="Добавить доход" />
             <button class="btn" onclick="addIncome()">Добавить</button>
@@ -124,76 +124,62 @@
             <div class="history" id="history-list"></div>
         </div>
     </div>
-
     <script>
-        // Функция для добавления дохода
-        async function addIncome() {
+        let financeData = JSON.parse(localStorage.getItem("financeData")) || [];
+
+        function addIncome() {
             let income = document.getElementById("income").value;
             if (income) {
-                const entry = { type: 'income', amount: income };
-                const response = await fetch('/add_entry', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(entry),
-                });
-                const data = await response.json();
-                console.log(data);
+                financeData.push({ type: 'income', amount: income });
+                saveData();
                 updateHistory();
             }
         }
 
-        // Функция для добавления расхода
-        async function addExpense() {
+        function addExpense() {
             let expense = document.getElementById("expense").value;
             let category = document.getElementById("category").value;
             if (expense && category) {
-                const entry = { type: 'expense', amount: expense, category: category };
-                const response = await fetch('/add_entry', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(entry),
-                });
-                const data = await response.json();
-                console.log(data);
+                financeData.push({ type: 'expense', amount: expense, category: category });
+                saveData();
                 updateHistory();
             }
         }
 
-        // Функция для обновления истории
-        async function updateHistory() {
-            const response = await fetch('/get_history');
-            const history = await response.json();
+        function updateHistory() {
             let historyList = document.getElementById("history-list");
             historyList.innerHTML = "";
-            history.forEach((entry, index) => {
+            financeData.forEach((entry, index) => {
                 let item = document.createElement("div");
                 item.className = "history-item";
-                item.innerHTML = `${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
+                item.innerHTML = 
+                    ${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
                     <button class="edit-btn" onclick="editEntry(${index})">✏️</button>
-                    <button class="delete-btn" onclick="deleteEntry(${index})">❌</button>`;
+                    <button class="delete-btn" onclick="deleteEntry(${index})">❌</button>
+                ;
                 historyList.appendChild(item);
             });
         }
 
-        // Функция для удаления записи
-        async function deleteEntry(index) {
-            const response = await fetch('/delete_entry', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id: index }),
-            });
-            const data = await response.json();
-            console.log(data);
+        function editEntry(index) {
+            let newAmount = prompt("Введите новую сумму:", financeData[index].amount);
+            if (newAmount !== null) {
+                financeData[index].amount = newAmount;
+                saveData();
+                updateHistory();
+            }
+        }
+
+        function deleteEntry(index) {
+            financeData.splice(index, 1);
+            saveData();
             updateHistory();
         }
 
-        // Функция для отображения вкладок
+        function saveData() {
+            localStorage.setItem("financeData", JSON.stringify(financeData));
+        }
+
         function showTab(tabName) {
             document.querySelectorAll(".content").forEach(tab => tab.classList.remove("active"));
             document.getElementById(tabName).classList.add("active");
@@ -201,7 +187,6 @@
             document.querySelector([onclick="showTab('${tabName}')"]).classList.add("active");
         }
 
-        // Загрузка истории при запуске
         window.onload = updateHistory;
     </script>
 </body>
