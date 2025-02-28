@@ -126,26 +126,24 @@
         </div>
     </div>
     <script>
-        let ipfs;
+        const API_TOKEN = "ВАШ_ТОКЕН_WEB3.STORAGE";  // Вставьте API-ключ Web3.Storage
+        const client = new Web3Storage({ token: API_TOKEN });
+
         let financeData = [];
 
-        async function initIPFS() {
-            ipfs = await Ipfs.create();
-        }
-
         async function loadData() {
-            const user = Telegram.WebApp.initDataUnsafe.user; 
+            const user = Telegram.WebApp.initDataUnsafe.user;
             if (!user) {
                 console.error("Ошибка: пользователь не найден");
                 return;
             }
             const userId = user.id;
-            const fileHash = localStorage.getItem(`financeData_${userId}`);
+            const fileCid = localStorage.getItem(`financeData_${userId}`);
 
-            if (fileHash) {
+            if (fileCid) {
                 try {
-                    const file = await ipfs.cat(fileHash);
-                    financeData = JSON.parse(new TextDecoder().decode(file));
+                    const response = await fetch(`https://dweb.link/ipfs/${fileCid}`);
+                    financeData = await response.json();
                     updateHistory();
                 } catch (error) {
                     console.error("Ошибка загрузки данных с IPFS:", error);
@@ -155,10 +153,10 @@
 
         async function saveData() {
             try {
-                const buffer = new TextEncoder().encode(JSON.stringify(financeData));
-                const { path } = await ipfs.add(buffer);
+                const file = new File([JSON.stringify(financeData)], "financeData.json", { type: "application/json" });
+                const cid = await client.put([file]);  // Загружаем данные в Web3.Storage
                 const user = Telegram.WebApp.initDataUnsafe.user;
-                localStorage.setItem(`financeData_${user.id}`, path);
+                localStorage.setItem(`financeData_${user.id}`, cid);
             } catch (error) {
                 console.error("Ошибка сохранения данных в IPFS:", error);
             }
@@ -221,7 +219,6 @@
         }
 
         window.onload = async function () {
-            await initIPFS();
             await loadData();
         }
     </script>
