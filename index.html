@@ -107,10 +107,26 @@
 </head>
 <body>
     <div class="container">
-        <!-- Твой HTML-контент -->
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('main')">Главная</div>
+            <div class="tab" onclick="showTab('history')">История</div>
+        </div>
+        <div id="main" class="content active">
+            <h1>Ваш AI Финансовый Ассистент</h1>
+            <input type="number" id="income" placeholder="Добавить доход" />
+            <button class="btn" onclick="addIncome()">Добавить</button>
+            <input type="number" id="expense" placeholder="Добавить расход" />
+            <input type="text" id="category" placeholder="Категория" />
+            <button class="btn" onclick="addExpense()">Добавить</button>
+        </div>
+        <div id="history" class="content">
+            <h1>История операций</h1>
+            <div class="history" id="history-list"></div>
+        </div>
     </div>
 
     <script>
+        // Функция для добавления дохода
         async function addIncome() {
             let income = document.getElementById("income").value;
             if (income) {
@@ -128,6 +144,7 @@
             }
         }
 
+        // Функция для добавления расхода
         async function addExpense() {
             let expense = document.getElementById("expense").value;
             let category = document.getElementById("category").value;
@@ -146,6 +163,7 @@
             }
         }
 
+        // Функция для обновления истории
         async function updateHistory() {
             const response = await fetch('/get_history');
             const history = await response.json();
@@ -161,6 +179,7 @@
             });
         }
 
+        // Функция для удаления записи
         async function deleteEntry(index) {
             const response = await fetch('/delete_entry', {
                 method: 'DELETE',
@@ -174,6 +193,15 @@
             updateHistory();
         }
 
+        // Функция для отображения вкладок
+        function showTab(tabName) {
+            document.querySelectorAll(".content").forEach(tab => tab.classList.remove("active"));
+            document.getElementById(tabName).classList.add("active");
+            document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
+            document.querySelector([onclick="showTab('${tabName}')"]).classList.add("active");
+        }
+
+        // Загрузка истории при запуске
         window.onload = updateHistory;
     </script>
 </body>
