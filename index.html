@@ -111,86 +111,67 @@
     </div>
 
     <script>
-        const API_URL = "https://api.fleek.co";  // URL Fleek API
-        const API_KEY = "flk_aejx0tbiu2eb73erlk2p5qcx_SKB2EvnTzsDeJCeDqd4w26nQRuMYHoT4W1kiWcJ2LR1";  // Твой API-ключ
-
-        let financeData = JSON.parse(localStorage.getItem("financeData")) || [];
-
-        function addIncome() {
+        async function addIncome() {
             let income = document.getElementById("income").value;
             if (income) {
-                financeData.push({ type: 'income', amount: income });
-                saveDataToFleek(financeData);  // Загрузка на Fleek
+                const entry = { type: 'income', amount: income };
+                const response = await fetch('/add_entry', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(entry),
+                });
+                const data = await response.json();
+                console.log(data);
                 updateHistory();
             }
         }
 
-        function addExpense() {
+        async function addExpense() {
             let expense = document.getElementById("expense").value;
             let category = document.getElementById("category").value;
             if (expense && category) {
-                financeData.push({ type: 'expense', amount: expense, category: category });
-                saveDataToFleek(financeData);  // Загрузка на Fleek
+                const entry = { type: 'expense', amount: expense, category: category };
+                const response = await fetch('/add_entry', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(entry),
+                });
+                const data = await response.json();
+                console.log(data);
                 updateHistory();
             }
         }
 
-        // Функция для загрузки данных на Fleek
-        async function saveDataToFleek(data) {
-            try {
-                const response = await fetch(`${API_URL}/upload`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${API_KEY}`,  // Авторизация с использованием API-ключа
-                    },
-                    body: JSON.stringify({
-                        data: JSON.stringify(data),  // Данные, которые ты хочешь загрузить
-                    }),
-                });
-
-                if (!response.ok) throw new Error("Ошибка загрузки данных.");
-                const result = await response.json();
-                console.log("Данные успешно загружены на Fleek:", result);
-            } catch (error) {
-                console.error("Ошибка при загрузке на Fleek:", error);
-            }
-        }
-
-        function updateHistory() {
+        async function updateHistory() {
+            const response = await fetch('/get_history');
+            const history = await response.json();
             let historyList = document.getElementById("history-list");
             historyList.innerHTML = "";
-            financeData.forEach((entry, index) => {
+            history.forEach((entry, index) => {
                 let item = document.createElement("div");
                 item.className = "history-item";
-                item.innerHTML = 
-                    `${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
+                item.innerHTML = `${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
                     <button class="edit-btn" onclick="editEntry(${index})">✏️</button>
                     <button class="delete-btn" onclick="deleteEntry(${index})">❌</button>`;
                 historyList.appendChild(item);
             });
         }
 
-        function editEntry(index) {
-            let newAmount = prompt("Введите новую сумму:", financeData[index].amount);
-            if (newAmount !== null) {
-                financeData[index].amount = newAmount;
-                saveDataToFleek(financeData);  // Обновление данных на Fleek
-                updateHistory();
-            }
-        }
-
-        function deleteEntry(index) {
-            financeData.splice(index, 1);
-            saveDataToFleek(financeData);  // Обновление данных на Fleek
+        async function deleteEntry(index) {
+            const response = await fetch('/delete_entry', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: index }),
+            });
+            const data = await response.json();
+            console.log(data);
             updateHistory();
-        }
-
-        function showTab(tabName) {
-            document.querySelectorAll(".content").forEach(tab => tab.classList.remove("active"));
-            document.getElementById(tabName).classList.add("active");
-            document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
-            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add("active");
         }
 
         window.onload = updateHistory;
