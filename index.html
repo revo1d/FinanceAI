@@ -15,19 +15,33 @@
         .btn { display: block; width: 100%; padding: 12px; margin-top: 10px; background: #00A8FF; color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; transition: 0.3s; }
         .btn:hover { background: #0088CC; }
         input { width: 100%; padding: 10px; margin: 10px 0; border: none; border-radius: 10px; background: #2A2A2A; color: white; font-size: 16px; }
+        .tabs { display: flex; justify-content: space-around; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; background: #00A8FF; border-radius: 12px; cursor: pointer; }
+        .tab.active { background: #0088CC; }
+        .content { display: none; }
+        .content.active { display: block; }
         .history { text-align: left; margin-top: 20px; }
         .history-item { background: #2A2A2A; padding: 10px; margin: 5px 0; border-radius: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Ваш AI Финансовый Ассистент</h1>
-        <input type="number" id="income" placeholder="Добавить доход" />
-        <button class="btn" onclick="addIncome()">Добавить</button>
-        <input type="number" id="expense" placeholder="Добавить расход" />
-        <input type="text" id="category" placeholder="Категория" />
-        <button class="btn" onclick="addExpense()">Добавить</button>
-        <div class="history" id="history-list"></div>
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('main')">Главная</div>
+            <div class="tab" onclick="showTab('history')">История</div>
+        </div>
+        <div id="main" class="content active">
+            <h1>Ваш AI Финансовый Ассистент</h1>
+            <input type="number" id="income" placeholder="Добавить доход" />
+            <button class="btn" onclick="addIncome()">Добавить</button>
+            <input type="number" id="expense" placeholder="Добавить расход" />
+            <input type="text" id="category" placeholder="Категория" />
+            <button class="btn" onclick="addExpense()">Добавить</button>
+        </div>
+        <div id="history" class="content">
+            <h1>История операций</h1>
+            <div class="history" id="history-list"></div>
+        </div>
     </div>
     <script>
         const firebaseConfig = {
@@ -95,6 +109,13 @@
                 updateHistory();
             });
         };
+
+        function showTab(tabName) {
+            document.querySelectorAll(".content").forEach(tab => tab.classList.remove("active"));
+            document.getElementById(tabName).classList.add("active");
+            document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
+            document.querySelector([onclick="showTab('${tabName}')"]).classList.add("active");
+        }
     </script>
 </body>
 </html>
