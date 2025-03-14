@@ -93,15 +93,66 @@
             justify-content: space-between;
             align-items: center;
         }
-        .edit-btn, .delete-btn {
+        .history-item span {
+            flex: 1;
+        }
+        .history-item .amount {
+            font-weight: bold;
+        }
+        .history-item .income {
+            color: #4CAF50; /* Зеленый для доходов */
+        }
+        .history-item .expense {
+            color: #FF5252; /* Красный для расходов */
+        }
+        .edit-btn {
+            background: none;
+            border: none;
+            color: #FFC107;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .delete-btn {
             background: none;
             border: none;
             color: #FF5252;
             cursor: pointer;
             font-size: 14px;
         }
-        .edit-btn {
-            color: #FFC107;
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #1E1E1E;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+        }
+        .modal-content h2 {
+            margin-bottom: 15px;
+        }
+        .modal-content input {
+            margin-bottom: 10px;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .modal-buttons .btn {
+            width: 48%;
         }
     </style>
 </head>
@@ -113,34 +164,68 @@
         </div>
         <div id="main" class="content active">
             <h1>Ваш AI Финансовый Ассистент</h1>
-            <input type="number" id="income" placeholder="Добавить доход" />
-            <button class="btn" onclick="addIncome()">Добавить</button>
-            <input type="number" id="expense" placeholder="Добавить расход" />
-            <input type="text" id="category" placeholder="Категория" />
-            <button class="btn" onclick="addExpense()">Добавить</button>
+
+            <!-- Наименование операции -->
+            <div class="section-title">Наименование операции</div>
+            <input type="text" id="operation-name" placeholder="Введите наименование операции" />
+
+            <!-- Разделитель -->
+            <div class="separator"></div>
+
+            <!-- Добавление дохода -->
+            <div class="section-title">Добавить доход</div>
+            <input type="number" id="income" placeholder="Сумма дохода" />
+            <button class="btn" onclick="addIncome()">Добавить доход</button>
+
+            <!-- Разделитель -->
+            <div class="separator"></div>
+
+            <!-- Добавление расхода -->
+            <div class="section-title">Добавить расход</div>
+            <input type="number" id="expense" placeholder="Сумма расхода" />
+            <input type="text" id="category" placeholder="Категория расхода" />
+            <button class="btn" onclick="addExpense()">Добавить расход</button>
         </div>
         <div id="history" class="content">
             <h1>История операций</h1>
             <div class="history" id="history-list"></div>
         </div>
     </div>
+
+    <!-- Модальное окно для редактирования -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <h2>Редактирование операции</h2>
+            <input type="text" id="edit-name" placeholder="Название операции" />
+            <input type="number" id="edit-amount" placeholder="Сумма" />
+            <input type="text" id="edit-category" placeholder="Категория (для расходов)" />
+            <div class="modal-buttons">
+                <button class="btn" onclick="saveEdit()">Сохранить</button>
+                <button class="btn delete-btn" onclick="deleteEdit()">Удалить</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let financeData = JSON.parse(localStorage.getItem("financeData")) || [];
+        let currentEditIndex = null;
 
         function addIncome() {
+            let operationName = document.getElementById("operation-name").value;
             let income = document.getElementById("income").value;
-            if (income) {
-                financeData.push({ type: 'income', amount: income });
+            if (income && operationName) {
+                financeData.push({ type: 'income', amount: income, name: operationName });
                 saveData();
                 updateHistory();
             }
         }
 
         function addExpense() {
+            let operationName = document.getElementById("operation-name").value;
             let expense = document.getElementById("expense").value;
             let category = document.getElementById("category").value;
-            if (expense && category) {
-                financeData.push({ type: 'expense', amount: expense, category: category });
+            if (expense && category && operationName) {
+                financeData.push({ type: 'expense', amount: expense, category: category, name: operationName });
                 saveData();
                 updateHistory();
             }
@@ -153,27 +238,51 @@
                 let item = document.createElement("div");
                 item.className = "history-item";
                 item.innerHTML = `
-                    ${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
-                    <button class="edit-btn" onclick="editEntry(${index})">✏️</button>
-                    <button class="delete-btn" onclick="deleteEntry(${index})">❌</button>
+                    <span>${entry.name}</span>
+                    <span class="amount ${entry.type === 'income' ? 'income' : 'expense'}">
+                        ${entry.type === 'income' ? '+' : '-'}${entry.amount}
+                    </span>
+                    <button class="edit-btn" onclick="openEditModal(${index})">Изменить</button>
                 `;
                 historyList.appendChild(item);
             });
         }
 
-        function editEntry(index) {
-            let newAmount = prompt("Введите новую сумму:", financeData[index].amount);
-            if (newAmount !== null) {
-                financeData[index].amount = newAmount;
+        function openEditModal(index) {
+            currentEditIndex = index;
+            let entry = financeData[index];
+            document.getElementById("edit-name").value = entry.name;
+            document.getElementById("edit-amount").value = entry.amount;
+            document.getElementById("edit-category").value = entry.category || "";
+            document.getElementById("edit-modal").classList.add("active");
+        }
+
+        function saveEdit() {
+            if (currentEditIndex !== null) {
+                let entry = financeData[currentEditIndex];
+                entry.name = document.getElementById("edit-name").value;
+                entry.amount = document.getElementById("edit-amount").value;
+                if (entry.type === 'expense') {
+                    entry.category = document.getElementById("edit-category").value;
+                }
                 saveData();
                 updateHistory();
+                closeEditModal();
             }
         }
 
-        function deleteEntry(index) {
-            financeData.splice(index, 1);
-            saveData();
-            updateHistory();
+        function deleteEdit() {
+            if (currentEditIndex !== null) {
+                financeData.splice(currentEditIndex, 1);
+                saveData();
+                updateHistory();
+                closeEditModal();
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById("edit-modal").classList.remove("active");
+            currentEditIndex = null;
         }
 
         function saveData() {
