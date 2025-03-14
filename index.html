@@ -6,185 +6,188 @@
     <title>Finance Assistant</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Стили из третьего файла + адаптированные элементы дизайна */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Arial', sans-serif;
         }
-        
-        .frame {
-            width: 375px;
-            height: 812px;
-            background: #121212;
-            position: relative;
-            margin: 0 auto;
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
         }
-
-        .overlap-group {
-            position: relative;
-            height: 100%;
+        .container {
+            width: 90%;
+            max-width: 400px;
+            padding: 20px;
+            background: #1E1E1E;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
-
-        .home-btn, .history-btn {
-            position: absolute;
-            top: 20px;
-            width: 40px;
-            cursor: pointer;
+        h1 {
+            font-size: 22px;
+            margin-bottom: 15px;
         }
-
-        .home-btn { left: 20px; }
-        .history-btn { right: 20px; }
-
-        .group {
-            position: absolute;
-            top: 150px;
-            width: 100%;
-            padding: 0 20px;
-        }
-
-        input, .btn {
+        .btn {
+            display: block;
             width: 100%;
             padding: 12px;
-            margin: 10px 0;
+            margin-top: 10px;
+            background: #00A8FF;
+            color: white;
             border: none;
             border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn:hover {
+            background: #0088CC;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
             background: #2A2A2A;
             color: white;
             font-size: 16px;
         }
-
-        .btn {
-            background: #00A8FF;
-            cursor: pointer;
-            transition: 0.3s;
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
         }
-
-        .btn:hover {
+        .tab {
+            padding: 10px 20px;
+            background: #00A8FF;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        .tab.active {
             background: #0088CC;
         }
-
-        .history {
-            position: absolute;
-            top: 100px;
-            padding: 20px;
-            width: 100%;
+        .content {
             display: none;
         }
-
+        .content.active {
+            display: block;
+        }
+        .history {
+            text-align: left;
+            margin-top: 20px;
+        }
         .history-item {
             background: #2A2A2A;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 12px;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-
         .edit-btn, .delete-btn {
             background: none;
             border: none;
-            color: #FFC107;
+            color: #FF5252;
             cursor: pointer;
-            margin-left: 10px;
+            font-size: 14px;
         }
-
-        .delete-btn { color: #FF5252; }
+        .edit-btn {
+            color: #FFC107;
+        }
     </style>
 </head>
 <body>
-    <div class="frame">
-        <div class="overlap-group">
-            <img class="home-btn" src="home-btn-on.png" onclick="showMain()">
-            <img class="history-btn" src="history-btn.png" onclick="showHistory()">
-
-            <!-- Главный экран -->
-            <div class="group" id="main">
-                <input type="number" id="income" placeholder="Доход">
-                <button class="btn" onclick="addIncome()">Добавить доход</button>
-                
-                <input type="number" id="expense" placeholder="Расход">
-                <input type="text" id="category" placeholder="Категория">
-                <button class="btn" onclick="addExpense()">Добавить расход</button>
-            </div>
-
-            <!-- История -->
-            <div class="history" id="history">
-                <div id="history-list"></div>
-            </div>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('main')">Главная</div>
+            <div class="tab" onclick="showTab('history')">История</div>
+        </div>
+        <div id="main" class="content active">
+            <h1>Ваш AI Финансовый Ассистент</h1>
+            <input type="number" id="income" placeholder="Добавить доход" />
+            <button class="btn" onclick="addIncome()">Добавить</button>
+            <input type="number" id="expense" placeholder="Добавить расход" />
+            <input type="text" id="category" placeholder="Категория" />
+            <button class="btn" onclick="addExpense()">Добавить</button>
+        </div>
+        <div id="history" class="content">
+            <h1>История операций</h1>
+            <div class="history" id="history-list"></div>
         </div>
     </div>
-
     <script>
-        // Логика из третьего файла
         let financeData = JSON.parse(localStorage.getItem("financeData")) || [];
 
         function addIncome() {
-            const income = document.getElementById("income").value;
+            let income = document.getElementById("income").value;
             if (income) {
                 financeData.push({ type: 'income', amount: income });
-                updateStorage();
-                document.getElementById("income").value = "";
+                saveData();
+                updateHistory();
             }
         }
 
         function addExpense() {
-            const expense = document.getElementById("expense").value;
-            const category = document.getElementById("category").value;
+            let expense = document.getElementById("expense").value;
+            let category = document.getElementById("category").value;
             if (expense && category) {
-                financeData.push({ type: 'expense', amount: expense, category });
-                updateStorage();
-                document.getElementById("expense").value = "";
-                document.getElementById("category").value = "";
+                financeData.push({ type: 'expense', amount: expense, category: category });
+                saveData();
+                updateHistory();
             }
         }
 
-        function updateStorage() {
-            localStorage.setItem("financeData", JSON.stringify(financeData));
-            updateHistory();
-        }
-
         function updateHistory() {
-            const historyList = document.getElementById("history-list");
-            historyList.innerHTML = financeData.map((entry, index) => `
-                <div class="history-item">
-                    ${entry.type === 'income' ? 'Доход' : 'Расход'}: ${entry.amount}${entry.category ? ` (${entry.category})` : ''}
-                    <div>
-                        <button class="edit-btn" onclick="editEntry(${index})">✏️</button>
-                        <button class="delete-btn" onclick="deleteEntry(${index})">❌</button>
-                    </div>
-                </div>
-            `).join("");
+            let historyList = document.getElementById("history-list");
+            historyList.innerHTML = "";
+            financeData.forEach((entry, index) => {
+                let item = document.createElement("div");
+                item.className = "history-item";
+                item.innerHTML = `
+                    ${entry.type === 'income' ? "Доход: " : "Расход: "}${entry.amount} ${entry.category ? " на " + entry.category : ""}
+                    <button class="edit-btn" onclick="editEntry(${index})">✏️</button>
+                    <button class="delete-btn" onclick="deleteEntry(${index})">❌</button>
+                `;
+                historyList.appendChild(item);
+            });
         }
 
         function editEntry(index) {
-            const newAmount = prompt("Новая сумма:", financeData[index].amount);
+            let newAmount = prompt("Введите новую сумму:", financeData[index].amount);
             if (newAmount !== null) {
                 financeData[index].amount = newAmount;
-                updateStorage();
+                saveData();
+                updateHistory();
             }
         }
 
         function deleteEntry(index) {
             financeData.splice(index, 1);
-            updateStorage();
-        }
-
-        function showMain() {
-            document.getElementById("main").style.display = "block";
-            document.getElementById("history").style.display = "none";
-        }
-
-        function showHistory() {
-            document.getElementById("main").style.display = "none";
-            document.getElementById("history").style.display = "block";
+            saveData();
             updateHistory();
         }
 
-        // Инициализация
-        window.onload = showMain;
+        function saveData() {
+            localStorage.setItem("financeData", JSON.stringify(financeData));
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll(".content").forEach(tab => tab.classList.remove("active"));
+            document.getElementById(tabName).classList.add("active");
+            document.querySelectorAll(".tab").forEach(tab => tab.classList.remove("active"));
+            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add("active");
+        }
+
+        window.onload = updateHistory;
     </script>
 </body>
 </html>
